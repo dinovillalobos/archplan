@@ -1,73 +1,18 @@
-# React + TypeScript + Vite
+# 🎨 ArchPlan UI (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Dashboard ejecutivo y visor de planos (Blueprints) para la plataforma ArchPlan. Diseñado con un enfoque profesional, oscuro y minimalista, priorizando la experiencia del usuario (UX) y la velocidad de carga.
 
-Currently, two official plugins are available:
+## ✨ Características de la Interfaz
+* **Executive Dashboard:** Tarjetas de métricas dinámicas que consumen datos en tiempo real desde el servidor.
+* **Componentización:** Arquitectura limpia en React, separando componentes reutilizables como `ProjectCard` y `Sidebar`.
+* **Visor de Planos Modal:** Integración fluida con la API de documentos para abrir PDFs físicos directamente sobre la interfaz mediante un Modal interactivo.
+* **Diseño Responsivo & Vectorial:** Estilizado 100% con Tailwind CSS v4 y sistema de iconos SVG nativos con Lucide React.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Instalación y Ejecución Local
 
-## React Compiler
+Para correr este cliente, se recomienda tener la API de Java (`bimmanager`) corriendo simultáneamente en el puerto `8080`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Abre una terminal en esta carpeta.
+2. Instala las dependencias de Node:
+   ```bash
+   npm install
