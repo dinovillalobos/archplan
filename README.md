@@ -1,25 +1,21 @@
-# 🏗️ ArchPlan - Architecture & BIM Management System
+# 🏗️ ArchPlan - Sistema de Gestión BIM y Arquitectura
 
-A full-stack, decoupled web application designed for architectural firms to manage construction projects, track statuses, and securely store and visualize blueprints (PDFs). 
+ArchPlan es una plataforma Fullstack diseñada para la gestión integral de proyectos arquitectónicos, control de versiones de planos y seguimiento de métricas de construcción en tiempo real. 
 
-## 🚀 Architecture Overview
-This project follows a modern decoupled architecture (Polyrepo structure within a Monorepo for portfolio purposes), separating the client-side presentation from the server-side business logic and storage.
+Este repositorio utiliza una **Arquitectura Desacoplada (Monorepo)**, separando claramente los dominios del cliente (Frontend) y del servidor (Backend) para garantizar la escalabilidad y el mantenimiento del código.
 
-* **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS 4.0
-* **Backend:** Java 17 + Spring Boot 3 + Spring Data JPA
-* **Database:** PostgreSQL (Dockerized)
-* **Storage:** Local File System (`/uploads`) for binary files (PDF blueprints).
+## 🚀 Arquitectura del Sistema
 
-## 📂 Project Structure
-* [`/archplan-ui`](./archplan-ui) - The React/TypeScript frontend application.
-* [`/bimmanager`](./bimmanager) - The Spring Boot/Java REST API backend.
+El proyecto está dividido en dos módulos principales:
 
-## ⚙️ How to Run the Application Locally
+* **[ArchPlan UI (Frontend)](./archplan-ui/README.md):** Interfaz de usuario moderna y reactiva con un diseño "Modern Dark". Construida con **React, TypeScript y Tailwind CSS v4**.
+* **[BIM Manager API (Backend)](./bimmanager/README.md):** API RESTful robusta encargada de la lógica de negocio, persistencia de datos y gestión del sistema de archivos (PDFs). Construida con **Java, Spring Boot y PostgreSQL**.
 
-You will need two terminals to run the frontend and backend concurrently.
+## 🛠️ Stack Tecnológico Global
+* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide React.
+* **Backend:** Java 17+, Spring Boot 3, Spring Data JPA, Hibernate.
+* **Base de Datos:** PostgreSQL.
+* **Almacenamiento:** File System Local (para gestión de planos PDF).
 
-**1. Start the Backend (Terminal 1)**
-```bash
-cd bimmanager
-# Ensure PostgreSQL is running (e.g., via docker-compose up -d)
-./mvnw spring-boot:run  
+## 👨‍💻 Autor
+* **Ricardo** - Ingeniero en Computación | Desarrollador Java Fullstack.
