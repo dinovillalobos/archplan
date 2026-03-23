@@ -1,0 +1,15 @@
+# --- Ignorar de Java / Spring Boot ---
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/uploads/
+*.class
+
+# --- Ignorar de React / Node ---
+**/node_modules/
+**/dist/
+**/dist-ssr/
+*.local
+
+# --- Ignorar del Sistema ---
+.DS_Store
+Thumbs.db

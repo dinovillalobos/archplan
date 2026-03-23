@@ -1,0 +1,20 @@
+/* Importamos todo Tailwind 4 */
+@import "tailwindcss";
+
+/* Definimos los colores personalizados con el nuevo formato */
+@theme {
+  --color-arch-dark: #0a0d14;
+  --color-arch-card: #161b22;
+  --color-arch-blue: #3b82f6;
+  --color-arch-text-gray: #94a3b8;
+}
+
+/* Aplicamos el estilo global al body */
+@layer base {
+  body {
+    background-color: var(--color-arch-dark);
+    color: white;
+    font-family: sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

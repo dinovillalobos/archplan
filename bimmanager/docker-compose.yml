@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: rdb_postgres
+    environment:
+      POSTGRES_USER: rdb_admin
+      POSTGRES_PASSWORD: g0wr07db
+      POSTGRES_DB: bim_manager_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    # Aquí definimos los límites para la Base de Datos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'      # Máximo usará la mitad de 1 núcleo de tu procesador
+          memory: 512M     # Límite estricto de 512 Megabytes de RAM
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: rdb_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@rdb.mx
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres-db
+    restart: unless-stopped
+    # pgAdmin necesita muy poco, lo limitamos aún más
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'      # 30% de 1 núcleo
+          memory: 256M     # Solo 256 Megabytes de RAM
+
+volumes:
+  postgres_data:
