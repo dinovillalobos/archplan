@@ -1,6 +1,6 @@
+// src/components/ProjectCard.tsx
 import { useState } from 'react';
-// Importamos los iconos
-import { Layers, Clock, FileText, X, ExternalLink } from 'lucide-react'; 
+import { Layers, Clock, FileText, X, ExternalLink, UploadCloud, Loader2 } from 'lucide-react';
 
 interface ProjectCardProps {
   proyecto: any;
@@ -8,28 +8,66 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ proyecto }: ProjectCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [documentos, setDocumentos] = useState([]);
+  const [documentos, setDocumentos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Nuevo estado para saber si estamos subiendo un archivo
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleViewPlans = async () => {
-    setIsModalOpen(true);
-    setIsLoading(true);
+  // Función para cargar los documentos (la separamos para poder reutilizarla)
+  const fetchDocumentos = async () => {
     try {
       const response = await fetch(`http://localhost:8080/api/documentos/proyecto/${proyecto.id}`);
       const data = await response.json();
       setDocumentos(data);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error al obtener documentos:", error);
+    }
+  };
+
+  const handleViewPlans = async () => {
+    setIsModalOpen(true);
+    setIsLoading(true);
+    await fetchDocumentos();
+    setIsLoading(false);
+  };
+
+  // --- LA MAGIA DE SUBIR ARCHIVOS ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    // Creamos un "paquete" especial para enviar archivos físicos
+    const formData = new FormData();
+    formData.append('archivo', file);
+    formData.append('proyectoId', proyecto.id.toString());
+
+    try {
+      const response = await fetch('http://localhost:8080/api/documentos/subir', {
+        method: 'POST',
+        body: formData, // Nota de Ing: No mandamos 'Content-Type', el navegador lo pone solo al usar FormData
+      });
+
+      if (response.ok) {
+        // Si subió bien, volvemos a pedir la lista de documentos para que aparezca al instante
+        await fetchDocumentos();
+      } else {
+        console.error("Error al subir el archivo");
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
   return (
     <>
+      {/* --- LA TARJETA PRINCIPAL (Sin cambios) --- */}
       <div className="bg-arch-card p-6 rounded-xl border border-gray-800 flex flex-col md:flex-row justify-between items-center hover:border-arch-blue transition-all duration-300">
         <div className="flex items-center gap-6 w-full md:w-1/3">
-          {/* Icono de Layers en lugar del rombo raro */}
           <Layers className="text-arch-blue" size={28} />
           <div>
             <h4 className="text-lg font-bold flex items-center gap-3 text-white">
@@ -54,7 +92,6 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
             <p className="text-sm font-medium text-white">Today</p>
           </div>
           <div className="flex items-center gap-4">
-            {/* Icono de Reloj profesional */}
             <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
               <Clock size={20} />
             </button>
@@ -67,9 +104,11 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
         </div>
       </div>
 
+      {/* --- EL MODAL (Ventana Emergente) --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
           <div className="bg-arch-card border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all">
+            
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-white">
                 Blueprints: <span className="text-arch-blue">{proyecto.nombre}</span>
@@ -79,7 +118,33 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
               </button>
             </div>
 
-            <div className="bg-arch-dark rounded-xl p-4 min-h-[150px]">
+            {/* --- ZONA DE UPLOAD (NUEVO) --- */}
+            <div className="mb-6 p-6 border-2 border-dashed border-gray-700 rounded-xl bg-gray-800/30 text-center hover:border-arch-blue transition-colors relative">
+              {/* Input invisible que cubre toda la caja */}
+              <input 
+                type="file" 
+                accept="application/pdf"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              
+              <div className="flex flex-col items-center justify-center pointer-events-none">
+                {isUploading ? (
+                  <Loader2 className="text-arch-blue mb-2 animate-spin" size={32} />
+                ) : (
+                  <UploadCloud className="text-arch-text-gray mb-2" size={32} />
+                )}
+                
+                <p className="text-sm font-semibold text-white">
+                  {isUploading ? 'Uploading Blueprint...' : 'Click or drag a PDF here to upload'}
+                </p>
+                <p className="text-xs text-arch-text-gray mt-1">Only .pdf files are supported</p>
+              </div>
+            </div>
+
+           {/* --- LISTA DE DOCUMENTOS --- */}
+            <div className="bg-arch-dark rounded-xl p-4 min-h-[150px] max-h-[300px] overflow-y-auto">
               {isLoading ? (
                 <p className="text-arch-text-gray text-center mt-10">Cargando planos...</p>
               ) : documentos.length === 0 ? (
@@ -104,6 +169,7 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
                 </ul>
               )}
             </div>
+
           </div>
         </div>
       )}
