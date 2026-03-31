@@ -2,6 +2,8 @@ package mx.rdb.bimmanager.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data // La magia de Lombok: genera getters, setters y constructores automáticamente
@@ -24,6 +26,9 @@ public class Proyecto {
 
     @Column(nullable = false)
     private String estado; // Ej: "PLANIFICACION", "EJECUCION", "ENTREGADO"
+
+    @Column(name = "presupuesto_total")
+    private BigDecimal presupuestoTotal = new BigDecimal("0.00");
 
     @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fechaCreacion;

@@ -1,7 +1,8 @@
 // src/components/ProjectCard.tsx
 import { useState } from 'react';
-import { Layers, Clock, FileText, X, ExternalLink, UploadCloud, Loader2, Kanban } from 'lucide-react';
+import { Layers, Clock, FileText, X, ExternalLink, UploadCloud, Loader2, Kanban, DollarSign } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
+import BudgetTracker from './BudgetTracker';
 
 interface ProjectCardProps {
   proyecto: any;
@@ -10,6 +11,7 @@ interface ProjectCardProps {
 export default function ProjectCard({ proyecto }: ProjectCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isKanbanOpen, setIsKanbanOpen] = useState(false);
+  const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const [documentos, setDocumentos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -91,22 +93,32 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
             <p className="text-sm font-medium text-white">Today</p>
           </div>
           
-          {/* CORRECCIÓN 1: Bloque de botones limpio */}
           <div className="flex items-center gap-3">
-            <button className="text-gray-400 hover:text-white transition-colors cursor-pointer mr-2">
-              <Clock size={20} />
-            </button>
-            <button 
-              onClick={() => setIsKanbanOpen(true)}
-              className="bg-arch-dark border border-gray-700 hover:border-arch-blue text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg cursor-pointer flex items-center gap-2">
-              <Kanban size={16} /> BOARD
-            </button>
-            <button 
-              onClick={handleViewPlans}
-              className="bg-gray-200 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg cursor-pointer">
-              PLANS
-            </button>
-          </div>
+         <button className="text-gray-400 hover:text-white transition-colors cursor-pointer mr-2">
+           <Clock size={20} />
+         </button>
+
+         {/* NUEVO BOTON BUDGET */}
+         <button 
+           onClick={() => setIsBudgetOpen(true)}
+           className="bg-arch-dark border border-gray-700 hover:border-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg cursor-pointer flex items-center gap-2">
+           <DollarSign size={16} className="text-green-500" /> BUDGET
+         </button>
+
+         {/* TU BOTON KANBAN EXISTENTE */}
+         <button 
+           onClick={() => setIsKanbanOpen(true)}
+           className="bg-arch-dark border border-gray-700 hover:border-arch-blue text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg cursor-pointer flex items-center gap-2">
+           <Kanban size={16} /> BOARD
+         </button>
+
+         {/* TU BOTON PLANS EXISTENTE */}
+         <button 
+           onClick={handleViewPlans}
+           className="bg-gray-200 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg cursor-pointer">
+           PLANS
+         </button>
+       </div>
 
         </div>
       </div>
@@ -182,6 +194,13 @@ export default function ProjectCard({ proyecto }: ProjectCardProps) {
         proyectoNombre={proyecto.nombre}
         isOpen={isKanbanOpen} 
         onClose={() => setIsKanbanOpen(false)} 
+      />
+
+      {/* NUESTRO NUEVO TRACKER FINANCIERO */}
+      <BudgetTracker
+        proyecto={proyecto}
+        isOpen={isBudgetOpen}
+        onClose={() => setIsBudgetOpen(false)}
       />
     </>
   );

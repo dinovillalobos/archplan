@@ -1,11 +1,10 @@
 // src/components/NewProjectModal.tsx
 import { useState } from "react";
-import { X, Building } from "lucide-react";
+import { X, Building, DollarSign } from "lucide-react";
 
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // Esta función le avisa a App.tsx que ya guardamos el proyecto para que actualice la lista
   onProjectCreated: (newProject: any) => void;
 }
 
@@ -14,38 +13,40 @@ export default function NewProjectModal({
   onClose,
   onProjectCreated,
 }: NewProjectModalProps) {
-  // Estado local para los datos del formulario
   const [formData, setFormData] = useState({
     nombre: "",
     cliente: "",
     estado: "Planning",
+    presupuestoTotal: "" // <-- Agregamos el presupuesto
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Si el modal está cerrado, no renderizamos nada
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Evita que la página se recargue al enviar el formulario
+    e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Le tocamos la puerta al POST de Java
+      const token = localStorage.getItem('archplan_token'); // Sacamos el pase VIP
+      
       const response = await fetch("http://localhost:8080/api/proyectos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // <-- Indispensable para que Java te deje pasar
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+            ...formData,
+            presupuestoTotal: parseFloat(formData.presupuestoTotal) || 0 // Aseguramos que sea número
+        }),
       });
 
       if (response.ok) {
         const newProject = await response.json();
-        onProjectCreated(newProject); // Actualizamos la lista en pantalla
-        onClose(); // Cerramos el modal
-        setFormData({ nombre: "", cliente: "", estado: "Planning" }); // Limpiamos el formulario
-      } else {
-        console.error("Error al guardar el proyecto en el servidor");
+        onProjectCreated(newProject);
+        onClose();
+        setFormData({ nombre: "", cliente: "", estado: "Planning", presupuestoTotal: "" });
       }
     } catch (error) {
       console.error("Error de conexión:", error);
@@ -60,75 +61,51 @@ export default function NewProjectModal({
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <Building className="text-arch-blue" />
-            New Blueprint
+            New Project
           </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white cursor-pointer transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-white cursor-pointer transition-colors">
             <X size={24} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Input: Nombre del Proyecto */}
           <div>
-            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">
-              Project Name
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.nombre}
-              onChange={(e) =>
-                setFormData({ ...formData, nombre: e.target.value })
-              }
-              className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue transition-colors"
-              placeholder="Ej. Luminary Heights"
-            />
+            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">Project Name</label>
+            <input type="text" required value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue" placeholder="Ej. Residencial Arcos" />
           </div>
 
-          {/* Input: Cliente */}
           <div>
-            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">
-              Client Name
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.cliente}
-              onChange={(e) =>
-                setFormData({ ...formData, cliente: e.target.value })
-              }
-              className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue transition-colors"
-              placeholder="Ej. Urban Dev Corp"
-            />
+            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">Client Name</label>
+            <input type="text" required value={formData.cliente} onChange={(e) => setFormData({ ...formData, cliente: e.target.value })} className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue" placeholder="Ej. Inmobiliaria Global" />
           </div>
 
-          {/* Select: Estado */}
+          {/* --- NUEVO CAMPO: PRESUPUESTO --- */}
           <div>
-            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">
-              Initial Status
-            </label>
-            <select
-              value={formData.estado}
-              onChange={(e) =>
-                setFormData({ ...formData, estado: e.target.value })
-              }
-              className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue transition-colors appearance-none"
-            >
+            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">Total Budget ($)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-3.5 text-gray-500" size={18} />
+              <input 
+                type="number" 
+                step="0.01"
+                required 
+                value={formData.presupuestoTotal} 
+                onChange={(e) => setFormData({ ...formData, presupuestoTotal: e.target.value })} 
+                className="w-full bg-arch-dark border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-arch-blue" 
+                placeholder="0.00" 
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-arch-text-gray uppercase tracking-wider mb-2">Initial Status</label>
+            <select value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value })} className="w-full bg-arch-dark border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue appearance-none">
               <option value="Planning">Planning</option>
               <option value="Construction">Construction</option>
               <option value="Completed">Completed</option>
             </select>
           </div>
 
-          {/* Botón Submit */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-arch-blue hover:bg-blue-600 text-white font-bold py-3 rounded-lg mt-6 transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50"
-          >
+          <button type="submit" disabled={isLoading} className="w-full bg-arch-blue hover:bg-blue-600 text-white font-bold py-3 rounded-lg mt-6 transition-colors shadow-lg shadow-blue-500/20">
             {isLoading ? "Creating..." : "Create Project"}
           </button>
         </form>
