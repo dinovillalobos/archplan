@@ -48,4 +48,14 @@ public class ProyectoController {
             return ResponseEntity.ok(proyectoRepository.save(proyecto));
         }).orElse(ResponseEntity.notFound().build());
     }
+
+    // Permite actualizar solo el estado del proyecto (Planning, Construction,
+    // Completed)
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<?> actualizarEstado(@PathVariable Long id, @RequestBody Map<String, String> update) {
+        return proyectoRepository.findById(id).map(proyecto -> {
+            proyecto.setEstado(update.get("estado"));
+            return ResponseEntity.ok(proyectoRepository.save(proyecto));
+        }).orElse(ResponseEntity.notFound().build());
+    }
 }

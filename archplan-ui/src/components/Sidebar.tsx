@@ -1,13 +1,18 @@
 // src/components/Sidebar.tsx
-import { LayoutDashboard, Archive, Settings, Users } from 'lucide-react'; // <-- Añadimos Users
-import { NavLink } from 'react-router-dom'; // <-- Importamos NavLink
+import { LayoutDashboard, Archive, Settings, Users, LogOut } from 'lucide-react'; 
+import { NavLink } from 'react-router-dom'; 
 
 export default function Sidebar() {
-  // Función dinámica para darle estilo al botón cuando está "activo"
   const navLinkClass = ({ isActive }: { isActive: boolean }) => 
     isActive 
       ? "flex items-center gap-3 px-4 py-3 bg-arch-blue/10 text-arch-blue rounded-lg border-l-2 border-arch-blue font-semibold transition-colors"
       : "flex items-center gap-3 px-4 py-3 text-arch-text-gray hover:text-white transition-colors border-l-2 border-transparent";
+
+  // Función de cierre de sesión global
+  const handleLogout = () => {
+    localStorage.removeItem('archplan_token');
+    window.location.reload(); // Recarga para que App.tsx bloquee el acceso
+  };
 
   return (
     <aside className="w-64 bg-arch-dark border-r border-gray-800 h-screen flex flex-col justify-between sticky top-0 hidden md:flex shrink-0">
@@ -30,21 +35,16 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* Navigation Links con React Router */}
           <nav className="space-y-2">
             <NavLink to="/" className={navLinkClass} end>
               <LayoutDashboard size={20} /> Current Works
             </NavLink>
-            
-            {/* --- NUESTRO NUEVO MÓDULO --- */}
             <NavLink to="/directory" className={navLinkClass}>
               <Users size={20} /> Directory
             </NavLink>
-
             <NavLink to="/archive" className={navLinkClass}>
               <Archive size={20} /> Archive
             </NavLink>
-            
             <NavLink to="/settings" className={navLinkClass}>
               <Settings size={20} /> Settings
             </NavLink>
@@ -52,8 +52,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Storage */}
-      <div className="p-6 border-t border-gray-800">
+      {/* Zona Inferior: Storage y Log Out */}
+      <div className="p-6 border-t border-gray-800 flex flex-col gap-4">
         <div className="bg-arch-card p-4 rounded-lg border border-gray-700">
           <p className="text-xs text-arch-text-gray font-semibold mb-2">STORAGE USAGE</p>
           <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2">
@@ -61,6 +61,14 @@ export default function Sidebar() {
           </div>
           <p className="text-xs text-arch-text-gray">75% of 10GB used</p>
         </div>
+
+        {/* --- NUEVO BOTÓN DE SALIDA GLOBAL --- */}
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer w-full font-semibold mt-2"
+        >
+          <LogOut size={20} /> Sign Out
+        </button>
       </div>
     </aside>
   );

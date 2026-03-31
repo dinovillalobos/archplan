@@ -12,8 +12,8 @@ import java.util.Date;
 public class JwtUtil {
 
     // Generamos una llave secreta
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-
+    private static final String SECRET_STRING = "ArchPlan2026SecretKeyForJwtAuthenticationMustBeLongEnough";
+    private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET_STRING.getBytes());
     // El token dura 24 horas
     private static final long EXPIRE_DURATION = 24 * 60 * 60 * 1000;
 
