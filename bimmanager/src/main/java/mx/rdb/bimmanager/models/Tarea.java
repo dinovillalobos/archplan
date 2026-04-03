@@ -19,6 +19,9 @@ public class Tarea {
     @Column(nullable = false)
     private String estado;
 
+    @Column(name = "foto_url")
+    private String fotoUrl;
+
     private String contratista;
 
     // Relación: Muchas tareas pertenecen a un Proyecto
@@ -78,5 +81,13 @@ public class Tarea {
 
     public void setProyecto(Proyecto proyecto) {
         this.proyecto = proyecto;
+    }
+
+    public String getFotoUrl() {
+        return fotoUrl;
+    }
+
+    public void setFotoUrl(String fotoUrl) {
+        this.fotoUrl = fotoUrl;
     }
 }

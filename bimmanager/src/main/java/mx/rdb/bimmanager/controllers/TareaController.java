@@ -5,11 +5,18 @@ import mx.rdb.bimmanager.models.Tarea;
 import mx.rdb.bimmanager.repositories.ProyectoRepository;
 import mx.rdb.bimmanager.repositories.TareaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tareas")
@@ -47,5 +54,37 @@ public class TareaController {
             tarea.setEstado(update.get("estado"));
             return ResponseEntity.ok(tareaRepository.save(tarea));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/foto")
+    public ResponseEntity<?> subirFotoDeTarea(@PathVariable Long id, @RequestParam("foto") MultipartFile file) {
+        try {
+            // 1. Buscamos la tarea en la base de datos
+            Optional<Tarea> tareaOptional = tareaRepository.findById(id);
+            if (!tareaOptional.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+            Tarea tarea = tareaOptional.get();
+
+            // 2. Guardamos el archivo físicamente en la carpeta "uploads"
+            String nombreArchivo = "tarea_" + id + "_" + file.getOriginalFilename();
+            Path rutaDirectorio = Paths.get("uploads");
+
+            if (!Files.exists(rutaDirectorio)) {
+                Files.createDirectories(rutaDirectorio);
+            }
+
+            Path rutaArchivo = rutaDirectorio.resolve(nombreArchivo);
+            Files.copy(file.getInputStream(), rutaArchivo, StandardCopyOption.REPLACE_EXISTING);
+
+            // 3. Guardamos el nombre del archivo en la base de datos
+            tarea.setFotoUrl(nombreArchivo);
+            tareaRepository.save(tarea);
+
+            return ResponseEntity.ok(tarea);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al subir foto: " + e.getMessage());
+        }
     }
 }

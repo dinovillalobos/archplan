@@ -1,6 +1,6 @@
 // src/components/KanbanBoard.tsx
-import { useState, useEffect } from 'react';
-import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, User } from 'lucide-react';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, Camera, Loader2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   proyectoId: number;
@@ -9,21 +9,27 @@ interface KanbanBoardProps {
   onClose: () => void;
 }
 
+const getInitials = (name: string) => {
+  if (!name) return '?';
+  const words = name.trim().split(' ');
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+};
+
 export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClose }: KanbanBoardProps) {
   const [tareas, setTareas] = useState<any[]>([]);
-  // --- NUEVO: Estado para guardar la lista de empresas ---
   const [contratistas, setContratistas] = useState<any[]>([]);
-  
   const [nuevaTarea, setNuevaTarea] = useState('');
-  // --- NUEVO: Estado para saber a quién le asignamos la tarea ---
   const [contratistaAsignado, setContratistaAsignado] = useState('');
-  
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingFotoId, setUploadingFotoId] = useState<number | null>(null);
+  
+  const [activeMobileTab, setActiveMobileTab] = useState('TODO');
 
   useEffect(() => {
     if (isOpen) {
       cargarTareas();
-      cargarContratistas(); // --- NUEVO: Cargamos el directorio al abrir el tablero
+      cargarContratistas(); 
     }
   }, [isOpen, proyectoId]);
 
@@ -37,47 +43,68 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
     } catch (error) { console.error(error); }
   };
 
-  // --- NUEVO: Función para traer el Directorio ---
   const cargarContratistas = async () => {
     const token = localStorage.getItem('archplan_token');
     try {
       const res = await fetch('http://localhost:8080/api/contratistas', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setContratistas(data);
-      }
+      if (res.ok) setContratistas(await res.json());
     } catch (error) { console.error(error); }
+  };
+
+  const cambiarEstado = async (tareaId: number, nuevoEstado: string) => {
+    setTareas(prev => prev.map(t => t.id === tareaId ? { ...t, estado: nuevoEstado } : t));
+    const token = localStorage.getItem('archplan_token');
+    try {
+      await fetch(`http://localhost:8080/api/tareas/${tareaId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+    } catch (error) {
+      console.error(error);
+      cargarTareas(); 
+    }
   };
 
   const handleAgregarTarea = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nuevaTarea.trim()) return;
     setIsLoading(true);
-
     const token = localStorage.getItem('archplan_token');
     try {
       const res = await fetch(`http://localhost:8080/api/tareas/proyecto/${proyectoId}`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-          titulo: nuevaTarea, 
-          estado: 'TODO',
-          contratista: contratistaAsignado // --- NUEVO: Enviamos el nombre del responsable
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ titulo: nuevaTarea, estado: 'TODO', contratista: contratistaAsignado })
       });
-      
       if (res.ok) {
         setNuevaTarea('');
-        setContratistaAsignado(''); // Limpiamos el selector
+        setContratistaAsignado(''); 
         cargarTareas();
+        setActiveMobileTab('TODO');
       }
     } catch (error) { console.error(error); } 
     finally { setIsLoading(false); }
+  };
+
+  const handleSubirFoto = async (e: ChangeEvent<HTMLInputElement>, tareaId: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFotoId(tareaId);
+    const formData = new FormData();
+    formData.append('foto', file);
+    const token = localStorage.getItem('archplan_token');
+    try {
+      const res = await fetch(`http://localhost:8080/api/tareas/${tareaId}/foto`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) await cargarTareas(); 
+    } catch (error) { console.error(error); } 
+    finally { setUploadingFotoId(null); }
   };
 
   const handleDragStart = (e: React.DragEvent, idTarea: number) => {
@@ -86,42 +113,27 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
-  const handleDrop = async (e: React.DragEvent, nuevoEstado: string) => {
+  const handleDrop = (e: React.DragEvent, nuevoEstado: string) => {
     e.preventDefault();
-    const tareaId = e.dataTransfer.getData('tareaId');
-    if (!tareaId) return;
-
-    setTareas(prev => prev.map(t => t.id.toString() === tareaId ? { ...t, estado: nuevoEstado } : t));
-
-    const token = localStorage.getItem('archplan_token');
-    try {
-      await fetch(`http://localhost:8080/api/tareas/${tareaId}/estado`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ estado: nuevoEstado })
-      });
-    } catch (error) {
-      console.error(error);
-      cargarTareas();
-    }
+    const tareaIdStr = e.dataTransfer.getData('tareaId');
+    if (!tareaIdStr) return;
+    cambiarEstado(parseInt(tareaIdStr, 10), nuevoEstado);
   };
 
   const renderColumna = (titulo: string, estado: string, icon: any, colorBorder: string) => {
     const tareasColumna = tareas.filter(t => t.estado === estado);
+    const isVisibleInMobile = activeMobileTab === estado;
 
     return (
       <div 
-        className={`bg-gray-800/30 border ${colorBorder} rounded-xl p-4 flex flex-col h-[500px]`}
+        className={`${isVisibleInMobile ? 'flex' : 'hidden'} lg:flex bg-[#13161c] border border-gray-800 ${colorBorder} rounded-xl p-4 flex-col h-full w-full min-w-0`}
         onDragOver={handleDragOver}
         onDrop={(e) => handleDrop(e, estado)}
       >
-        <div className="flex items-center gap-2 mb-4 border-b border-gray-700 pb-3">
+        <div className="flex items-center gap-2 mb-4 border-b border-gray-800 pb-3 shrink-0">
           {icon}
-          <h4 className="font-bold text-white uppercase text-sm tracking-wider">{titulo}</h4>
-          <span className="ml-auto bg-gray-800 text-gray-400 text-xs py-1 px-2 rounded-full font-bold">
+          <h4 className="font-bold text-gray-300 uppercase text-xs tracking-wider">{titulo}</h4>
+          <span className="ml-auto bg-gray-800/50 text-gray-400 text-xs py-0.5 px-2.5 rounded-full font-bold border border-gray-700">
             {tareasColumna.length}
           </span>
         </div>
@@ -132,27 +144,74 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
               key={tarea.id}
               draggable
               onDragStart={(e) => handleDragStart(e, tarea.id)}
-              className="bg-arch-card p-3 rounded-lg border border-gray-700 hover:border-arch-blue cursor-grab active:cursor-grabbing shadow-lg"
+              className="bg-arch-card p-3.5 rounded-lg border border-gray-700/60 hover:border-arch-blue cursor-grab active:cursor-grabbing shadow-md flex flex-col transition-colors"
             >
-              <div className="flex items-start gap-2">
-                <GripVertical size={16} className="text-gray-500 mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-white font-medium leading-snug">{tarea.titulo}</p>
-                  
-                  {/* --- NUEVO: Dibujamos la etiqueta del responsable si existe --- */}
-                  {tarea.contratista && (
-                    <div className="mt-2 flex items-center gap-1.5 bg-arch-blue/10 text-arch-blue text-[10px] font-bold px-2 py-1 rounded-md w-fit border border-arch-blue/20">
-                      <User size={10} />
-                      {tarea.contratista}
+              
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <GripVertical size={16} className="text-gray-600 mt-0.5 shrink-0 hidden md:block" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-100 font-medium leading-snug break-words">{tarea.titulo}</p>
+                    
+                    {tarea.contratista && (
+                      <div className="mt-2.5 flex items-center gap-2" title={`Contratista: ${tarea.contratista}`}>
+                        <div className="w-5 h-5 rounded-full bg-arch-blue/20 text-arch-blue flex items-center justify-center text-[9px] font-bold border border-arch-blue/30 shrink-0">
+                          {getInitials(tarea.contratista)}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-semibold truncate">{tarea.contratista}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {tarea.fotoUrl && (
+                  <div className="w-14 h-14 rounded-md overflow-hidden border border-gray-700/50 shrink-0 relative group">
+                    <img 
+                      src={`http://localhost:8080/api/uploads/${tarea.fotoUrl}`} 
+                      alt="Evidencia" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* BARRA DE ACCIÓN INFERIOR */}
+              <div className="mt-3 pt-3 border-t border-gray-800/60 flex justify-between items-center gap-2">
+                
+                {/* SELECTOR DE ESTADO MÓVIL */}
+                <div className="md:hidden shrink-0">
+                  <select 
+                    value={tarea.estado}
+                    onChange={(e) => cambiarEstado(tarea.id, e.target.value)}
+                    className="bg-gray-800 text-[10px] text-gray-300 font-bold border border-gray-700 rounded px-2 py-1.5 outline-none focus:border-arch-blue"
+                  >
+                    <option value="TODO">A Por Hacer</option>
+                    <option value="IN_PROGRESS">A En Progreso</option>
+                    <option value="DONE">A Completado</option>
+                  </select>
+                </div>
+
+                <div className="ml-auto">
+                  {uploadingFotoId === tarea.id ? (
+                    <div className="flex items-center gap-1.5 text-xs text-arch-blue italic font-semibold">
+                      <Loader2 size={12} className="animate-spin" /> Subiendo...
                     </div>
+                  ) : (
+                    <label className="cursor-pointer text-gray-400 hover:text-white bg-gray-800/30 hover:bg-gray-700 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-semibold">
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleSubirFoto(e, tarea.id)} />
+                      <Camera size={14} /> Evidencia
+                    </label>
                   )}
                 </div>
               </div>
+
             </div>
           ))}
+          
           {tareasColumna.length === 0 && (
-            <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-700 rounded-lg">
-              <p className="text-gray-500 text-xs italic">Drop tasks here</p>
+            <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-gray-800 rounded-lg py-10 opacity-50">
+              <AlertCircle size={20} className="text-gray-600 mb-2" />
+              <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest">Columna Vacía</p>
             </div>
           )}
         </div>
@@ -163,59 +222,123 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-      <div className="bg-arch-dark border border-gray-700 w-full max-w-6xl rounded-2xl shadow-2xl p-6 flex flex-col h-[85vh]">
+    <div 
+      className="fixed inset-0 bg-black/85 flex items-center justify-center z-[100] backdrop-blur-sm p-4 lg:p-8 transition-all overflow-y-auto"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-[#0a0d13] w-full max-w-[1700px] h-[95vh] lg:h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.6)] rounded-2xl overflow-hidden relative border border-gray-700/50 flex flex-col p-4 md:p-6 lg:p-8 m-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-              Task Board
-              <span className="bg-arch-blue/20 text-arch-blue text-sm px-3 py-1 rounded-full">{proyectoNombre}</span>
-            </h3>
-            <p className="text-sm text-arch-text-gray mt-1">Assign tasks to your external teams and track progress.</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white cursor-pointer p-2 rounded-full hover:bg-gray-800">
-            <X size={24} />
-          </button>
+        {/* HEADER Y CERRAR */}
+        <div className="flex justify-between items-center mb-5 shrink-0 pr-16 relative z-10">
+          <h3 className="text-xl md:text-2xl font-bold text-white flex flex-row items-center gap-3">
+            Tablero KANBAN
+            <span className="bg-arch-blue/20 text-arch-blue text-[10px] md:text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+              {proyectoNombre}
+            </span>
+          </h3>
         </div>
 
-        {/* --- NUEVO: Formulario mejorado con selector de contratista --- */}
-        <form onSubmit={handleAgregarTarea} className="mb-6 flex gap-3">
-          <input 
-            type="text" 
-            required
-            value={nuevaTarea}
-            onChange={(e) => setNuevaTarea(e.target.value)}
-            placeholder="What needs to be done on site?"
-            className="flex-1 bg-arch-card border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue"
-          />
-          
-          {/* El Selector Dinámico */}
-          <select 
-            value={contratistaAsignado} 
-            onChange={(e) => setContratistaAsignado(e.target.value)}
-            className="w-1/4 bg-arch-card border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-arch-blue outline-none"
-          >
-            <option value="">Unassigned</option>
-            {contratistas.map(c => (
-              <option key={c.id} value={c.nombre}>{c.nombre} ({c.especialidad})</option>
+        {/* TABS MÓVILES */}
+        <div className="lg:hidden w-full mb-4 shrink-0 relative z-10">
+          <div className="flex bg-gray-900/80 border border-gray-800 p-1.5 rounded-xl">
+            {[
+              { id: 'CREAR', label: 'Crear' },
+              { id: 'TODO', label: 'Por Hacer' },
+              { id: 'IN_PROGRESS', label: 'Progreso' },
+              { id: 'DONE', label: 'Hecho' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveMobileTab(tab.id)}
+                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${
+                  activeMobileTab === tab.id ? 'bg-arch-card text-white shadow border border-gray-700' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
-          </select>
-
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            className="bg-arch-blue hover:bg-blue-600 text-white font-bold px-6 rounded-lg transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <Plus size={20} /> Add Task
-          </button>
-        </form>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-          {renderColumna('Por Hacer', 'TODO', <AlertCircle size={18} className="text-gray-400" />, 'border-t-4 border-t-gray-500')}
-          {renderColumna('En Progreso', 'IN_PROGRESS', <Clock size={18} className="text-yellow-500" />, 'border-t-4 border-t-yellow-500')}
-          {renderColumna('Completado', 'DONE', <CheckCircle2 size={18} className="text-green-500" />, 'border-t-4 border-t-green-500')}
+          </div>
         </div>
+
+        {/* ÁREA DE COLUMNAS (1 FILA, 4 COLUMNAS EN PC) */}
+        <div className="flex-1 min-h-0 relative z-10">
+          <div className="absolute inset-0 grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-5 pb-2 min-w-0">
+            
+            {/* COLUMNA 1: FORMULARIO */}
+            <div className={`${activeMobileTab === 'CREAR' ? 'flex' : 'hidden'} lg:flex bg-[#13161c] border border-gray-800 border-t-4 border-t-arch-blue rounded-xl p-4 flex-col h-full w-full shadow-lg min-w-0`}>
+              <div className="flex items-center gap-2 mb-4 border-b border-gray-800 pb-3 shrink-0">
+                <Plus size={18} className="text-arch-blue" />
+                <h4 className="font-bold text-gray-300 uppercase text-xs tracking-wider">Nueva Tarea</h4>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <form onSubmit={handleAgregarTarea} className="flex flex-col gap-5">
+                  <div>
+                    <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Descripción</label>
+                    <textarea 
+                      required
+                      rows={3}
+                      value={nuevaTarea}
+                      onChange={(e) => setNuevaTarea(e.target.value)}
+                      placeholder="Ej. Colado de losa..."
+                      className="w-full bg-[#0a0d13] border border-gray-700/80 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-arch-blue resize-none transition-colors shadow-inner"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Asignar A</label>
+                    <select 
+                      value={contratistaAsignado} 
+                      onChange={(e) => setContratistaAsignado(e.target.value)}
+                      className="w-full bg-[#0a0d13] border border-gray-700/80 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-arch-blue outline-none cursor-pointer transition-colors shadow-inner appearance-none"
+                    >
+                      <option value="">Nadie / Interno</option>
+                      {contratistas.map(c => (
+                        <option key={c.id} value={c.nombre}>{c.nombre} ({c.especialidad})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="bg-arch-blue hover:bg-blue-600 text-white font-bold w-full py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-arch-blue/20 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Crear Tarea'} 
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* COLUMNAS KANBAN 2, 3, y 4 */}
+            {renderColumna('Por Hacer', 'TODO', <AlertCircle size={18} className="text-gray-400" />, 'border-t-4 border-t-gray-500')}
+            {renderColumna('En Progreso', 'IN_PROGRESS', <Clock size={16} className="text-yellow-500" />, 'border-t-4 border-t-yellow-500')}
+            {renderColumna('Completado', 'DONE', <CheckCircle2 size={16} className="text-green-500" />, 'border-t-4 border-t-green-500')}
+            
+          </div>
+        </div>
+
+        {/* BOTÓN CERRAR AL FINAL DEL DOM PARA ASEGURAR VISIBILIDAD DE CLICK */}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }} 
+          title="Cerrar Kanban"
+          className="absolute top-4 right-4 lg:top-7 lg:right-7 z-[90] text-gray-400 hover:text-white p-2.5 cursor-pointer bg-gray-800/80 backdrop-blur-md rounded-full shadow-2xl border border-gray-500/50 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all outline-none"
+        >
+          <X size={24} />
+        </button>
 
       </div>
     </div>

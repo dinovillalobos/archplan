@@ -95,50 +95,48 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
 
   return (
     <>
-      <div className="bg-arch-card p-5 rounded-xl border border-gray-800 flex flex-col xl:flex-row justify-between items-center hover:border-arch-blue transition-all duration-300 gap-6">
+     <div className="bg-arch-card p-5 rounded-xl border border-gray-800 flex flex-col justify-between hover:border-arch-blue transition-all duration-300 gap-4 h-full shadow-lg">
         
-        {/* SECCIÓN 1: Info del Proyecto (Izquierda) */}
-        <div className="flex items-center gap-4 w-full xl:w-1/3">
-          <div className="bg-arch-dark p-3 rounded-lg border border-gray-700 shrink-0">
-            <Layers className="text-arch-blue" size={24} />
+        {/* SECCIÓN 1: Header (Icono, Título y Badge) */}
+        <div className="flex gap-3 items-start">
+          <div className="bg-arch-dark p-2.5 rounded-lg border border-gray-700 shrink-0">
+            <Layers className="text-arch-blue" size={20} />
           </div>
-          <div className="min-w-0">
-            <h4 className="text-lg font-bold flex items-center gap-2 text-white truncate">
-              {proyecto.nombre} 
-              <span className="bg-arch-blue/10 border border-arch-blue/30 text-arch-blue text-[10px] uppercase font-black px-2 py-0.5 rounded tracking-wider shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex justify-between items-start gap-2">
+              <h4 className="text-base font-bold text-white truncate" title={proyecto.nombre}>
+                {proyecto.nombre}
+              </h4>
+              <span className="bg-arch-blue/10 border border-arch-blue/30 text-arch-blue text-[9px] uppercase font-black px-1.5 py-0.5 rounded tracking-wider shrink-0 mt-0.5">
                 PRJ-{proyecto.id.toString().padStart(3, '0')}
               </span>
-            </h4>
-            <p className="text-sm text-arch-text-gray mt-0.5 truncate">Client: <span className="text-gray-300">{proyecto.cliente}</span></p>
+            </div>
+            <p className="text-xs text-arch-text-gray mt-0.5 truncate">Client: <span className="text-gray-300">{proyecto.cliente}</span></p>
           </div>
         </div>
 
-      {/* SECCIÓN 2: El "Badge" Inteligente (Estilo Jira/Notion) */}
-        <div className="w-full xl:w-auto flex flex-col justify-center flex-1 max-w-[200px] relative px-4 mt-4 xl:mt-0">
-          
+        {/* SECCIÓN 2: Dropdown de Estado (Ocupa todo el ancho disponible) */}
+        <div className="flex flex-col relative w-full mt-2 flex-1">
           <div className="flex justify-between items-end mb-1.5 px-1">
             <p className="text-[10px] text-arch-text-gray uppercase tracking-wider font-bold">Project Phase</p>
-            {/* Reloj de actividad sutil */}
             <p className="text-[9px] flex items-center gap-1 text-gray-500">
               <Clock size={10} className={isUpdatingStatus ? "animate-spin text-arch-blue" : ""} /> 
               {isUpdatingStatus ? 'Updating...' : 'Today'}
             </p>
           </div>
           
-          <div className="relative">
-            {/* 1. El Botón Principal (Badge) */}
+          <div className="relative w-full">
             <button 
               onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
-              onBlur={() => setTimeout(() => setIsStatusMenuOpen(false), 200)} // Se cierra si haces clic afuera
+              onBlur={() => setTimeout(() => setIsStatusMenuOpen(false), 200)}
               disabled={isUpdatingStatus}
-              className={`flex items-center justify-between w-full px-3 py-1.5 rounded-md text-xs font-bold border transition-all cursor-pointer shadow-sm ${
+              className={`flex items-center justify-between w-full px-3 py-2 rounded-md text-xs font-bold border transition-all cursor-pointer shadow-sm ${
                 proyecto.estado === 'Completed' ? 'bg-green-500/10 text-green-500 border-green-500/30 hover:bg-green-500/20' :
                 proyecto.estado === 'Construction' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/20' :
                 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
               }`}
             >
               <span className="flex items-center gap-2">
-                {/* Puntito de color dinámico */}
                 <span className={`w-1.5 h-1.5 rounded-full ${
                   proyecto.estado === 'Completed' ? 'bg-green-500' :
                   proyecto.estado === 'Construction' ? 'bg-yellow-500' :
@@ -146,8 +144,6 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
                 }`}></span>
                 {proyecto.estado}
               </span>
-              
-              {/* Icono de carga o Flecha desplegable */}
               {isUpdatingStatus ? (
                 <Loader2 size={12} className="animate-spin text-current opacity-70" />
               ) : (
@@ -155,7 +151,6 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
               )}
             </button>
 
-            {/* 2. El Menú Flotante Personalizado */}
             {isStatusMenuOpen && (
               <div className="absolute top-full left-0 mt-1 w-full bg-arch-dark border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden">
                 {['Planning', 'Construction', 'Completed'].map((estado) => (
@@ -163,7 +158,7 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
                     key={estado}
                     onClick={() => {
                       handleStatusChange(estado);
-                      setIsStatusMenuOpen(false); // Cerramos el menú al elegir
+                      setIsStatusMenuOpen(false);
                     }}
                     className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-700 transition-colors flex items-center gap-2 ${
                       proyecto.estado === estado ? 'bg-gray-800 text-white' : 'text-gray-400'
@@ -182,29 +177,18 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
           </div>
         </div>
 
-        {/* SECCIÓN 3: Quick Actions Minimalistas (Derecha) */}
-        <div className="flex items-center justify-end w-full xl:w-auto shrink-0">
-          <div className="flex items-center bg-arch-dark/60 border border-gray-700 p-1 rounded-xl gap-1 shadow-inner">
-            
-            <button onClick={handleViewPlans} title="View Blueprints" className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/80 rounded-lg transition-all cursor-pointer group relative">
+        {/* SECCIÓN 3: Footer con Quick Actions */}
+        <div className="flex items-center justify-between mt-2 pt-4 border-t border-gray-800/50">
+          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Tools</p>
+          <div className="flex items-center gap-1">
+            <button onClick={handleViewPlans} title="View Blueprints" className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/80 rounded-lg transition-all cursor-pointer">
               <FileText size={18} />
-              <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-gray-700 whitespace-nowrap z-10 shadow-xl">
-                Blueprints
-              </span>
             </button>
-
-            <button onClick={() => setIsKanbanOpen(true)} title="Project Board" className="p-2 text-gray-400 hover:text-arch-blue hover:bg-arch-blue/10 rounded-lg transition-all cursor-pointer group relative">
+            <button onClick={() => setIsKanbanOpen(true)} title="Project Board" className="p-2 text-gray-400 hover:text-arch-blue hover:bg-arch-blue/10 rounded-lg transition-all cursor-pointer">
               <Kanban size={18} />
-              <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-gray-700 whitespace-nowrap z-10 shadow-xl">
-                Task Board
-              </span>
             </button>
-
-            <button onClick={() => setIsBudgetOpen(true)} title="Financial Tracking" className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all cursor-pointer group relative">
+            <button onClick={() => setIsBudgetOpen(true)} title="Financial Tracking" className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-all cursor-pointer">
               <DollarSign size={18} />
-              <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-gray-700 whitespace-nowrap z-10 shadow-xl">
-                Budget Tracker
-              </span>
             </button>
           </div>
         </div>
