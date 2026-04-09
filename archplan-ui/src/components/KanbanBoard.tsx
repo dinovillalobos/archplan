@@ -1,7 +1,6 @@
 // src/components/KanbanBoard.tsx
 import { useState, useEffect, type ChangeEvent } from 'react';
-import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, Camera, Loader2 } from 'lucide-react';
-
+import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, Camera, Loader2, User, History } from 'lucide-react';
 interface KanbanBoardProps {
   proyectoId: number;
   proyectoNombre: string;
@@ -23,7 +22,8 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
   const [contratistaAsignado, setContratistaAsignado] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFotoId, setUploadingFotoId] = useState<number | null>(null);
-  
+  const [historialAbiertoId, setHistorialAbiertoId] = useState<number | null>(null);
+  const [historialDatos, setHistorialDatos] = useState<any[]>([]);
   const [activeMobileTab, setActiveMobileTab] = useState('TODO');
 
   useEffect(() => {
@@ -66,6 +66,20 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
       console.error(error);
       cargarTareas(); 
     }
+  };
+
+  const abrirHistorial = async (tareaId: number) => {
+    setHistorialAbiertoId(tareaId);
+    setHistorialDatos([]); // Limpiamos mientras carga
+    const token = localStorage.getItem('archplan_token');
+    try {
+      const res = await fetch(`http://localhost:8080/api/tareas/${tareaId}/historial`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setHistorialDatos(await res.json());
+      }
+    } catch (error) { console.error(error); }
   };
 
   const handleAgregarTarea = async (e: React.FormEvent) => {
@@ -190,6 +204,16 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
                     <option value="DONE">A Completado</option>
                   </select>
                 </div>
+                
+                <div className="ml-auto flex items-center gap-2">
+                  <button 
+                    onClick={() => abrirHistorial(tarea.id)}
+                    className="text-gray-500 hover:text-arch-blue p-1.5 rounded-md hover:bg-arch-blue/10 transition-colors"
+                    title="Ver Historial"
+                  >
+                    <History size={14} />
+                  </button>
+                  </div>
 
                 <div className="ml-auto">
                   {uploadingFotoId === tarea.id ? (
@@ -203,6 +227,8 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
                     </label>
                   )}
                 </div>
+
+ 
               </div>
 
             </div>
@@ -318,13 +344,58 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
               </div>
             </div>
 
-            {/* COLUMNAS KANBAN 2, 3, y 4 */}
+{/* COLUMNAS KANBAN 2, 3, y 4 */}
             {renderColumna('Por Hacer', 'TODO', <AlertCircle size={18} className="text-gray-400" />, 'border-t-4 border-t-gray-500')}
             {renderColumna('En Progreso', 'IN_PROGRESS', <Clock size={16} className="text-yellow-500" />, 'border-t-4 border-t-yellow-500')}
             {renderColumna('Completado', 'DONE', <CheckCircle2 size={16} className="text-green-500" />, 'border-t-4 border-t-green-500')}
             
           </div>
         </div>
+
+        {/* --- MODAL DE HISTORIAL --- */}
+        {historialAbiertoId && (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-[200] backdrop-blur-sm p-4 rounded-2xl">
+            <div className="bg-arch-dark border border-gray-700 w-full max-w-md rounded-xl shadow-2xl p-6 relative">
+              <button onClick={() => setHistorialAbiertoId(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
+                <X size={20} />
+              </button>
+              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <History className="text-arch-blue" size={20} /> Timeline de Tarea
+              </h3>
+
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {historialDatos.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center italic">No hay movimientos registrados aún.</p>
+                ) : (
+                  historialDatos.map((log, i) => (
+                    <div key={log.id} className="relative pl-6">
+                      {/* Línea conectora */}
+                      {i !== historialDatos.length - 1 && <div className="absolute left-2.5 top-6 bottom-[-30px] w-px bg-gray-700"></div>}
+                      
+                      {/* Punto del timeline */}
+                      <div className="absolute left-[5px] top-1.5 w-2 h-2 rounded-full bg-arch-blue shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+                      
+                      <div className="bg-gray-800/40 border border-gray-700 p-3 rounded-lg">
+                        <p className="text-xs text-gray-400 mb-1">
+                          {new Date(log.fechaCambio).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                        <p className="text-sm text-gray-200">
+                          Movido a <span className="font-bold text-white px-1.5 py-0.5 rounded bg-gray-800 border border-gray-600">{log.estadoNuevo}</span>
+                        </p>
+                        {log.estadoAnterior && (
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            (Anteriormente: {log.estadoAnterior})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* --- FIN DEL MODAL DE HISTORIAL --- */}
 
         {/* BOTÓN CERRAR AL FINAL DEL DOM PARA ASEGURAR VISIBILIDAD DE CLICK */}
         <button 
