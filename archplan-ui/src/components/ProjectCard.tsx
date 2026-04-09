@@ -272,6 +272,7 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
         proyecto={proyecto}
         isOpen={isBudgetOpen}
         onClose={() => setIsBudgetOpen(false)}
+        onUpdate={onUpdate}
       />
     </>
   );

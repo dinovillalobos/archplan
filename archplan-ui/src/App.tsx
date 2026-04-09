@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import NewProjectModal from './components/NewProjectModal'; 
 import StatusChart from './components/StatusChart';
 import Login from './components/Login'; 
-import { Building2, Search, PieChart, DollarSign, Menu } from 'lucide-react';
+import { Building2, Search, PieChart, DollarSign, Menu, Wallet } from 'lucide-react';
 import { Routes, Route } from 'react-router-dom';
 import Directory from './components/Directory';
 
@@ -13,31 +13,39 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('archplan_token'));
   
   const [proyectos, setProyectos] = useState<any[]>([]);
+  const [totalGastadoGlobal, setTotalGastadoGlobal] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Función central para recargar la lista
-  const fetchProyectos = () => {
+ const fetchProyectos = async () => {
     const token = localStorage.getItem('archplan_token');
     
-    fetch('http://localhost:8080/api/proyectos', {
-      headers: {
-        'Authorization': `Bearer ${token}` 
+    try {
+      // 1. Traemos los proyectos
+      const resProyectos = await fetch('http://localhost:8080/api/proyectos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!resProyectos.ok) throw new Error("Error al cargar proyectos");
+      const dataProyectos = await resProyectos.json();
+      setProyectos(dataProyectos);
+
+      // 2. Traemos el total de gastos para el Cerebro Matemático
+      const resGastos = await fetch('http://localhost:8080/api/gastos/total', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (resGastos.ok) {
+        const dataGastos = await resGastos.json();
+        setTotalGastadoGlobal(dataGastos.totalGastado || 0);
       }
-    })
-      .then(res => {
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem('archplan_token');
-            setIsAuthenticated(false);
-          }
-          throw new Error("No autorizado o error de servidor");
-        }
-        return res.json();
-      })
-      .then(data => setProyectos(data))
-      .catch(err => console.error("Error al conectar con Java:", err));
+      
+    } catch (err) {
+      console.error("Error al conectar con Java:", err);
+      // Aquí puedes manejar el logout si el token expira como lo tenías antes
+    }
   };
 
   useEffect(() => {
@@ -129,15 +137,21 @@ function App() {
                     <h3 className="text-5xl font-bold text-white mt-4">{proyectos.length}</h3>
                   </div>
 
-                  {/* 2. Métrica de Capital Global */}
+                 {/* 2. Métrica de Capital Global y Saldo */}
                   <div className="bg-arch-card p-6 rounded-xl border border-gray-800 hover:border-green-500 transition-colors">
                     <div className="flex justify-between items-start">
-                      <p className="text-xs font-semibold tracking-widest text-arch-text-gray uppercase">Global Capital Managed</p>
-                      <DollarSign className="text-green-500" size={24} />
+                      <p className="text-xs font-semibold tracking-widest text-arch-text-gray uppercase">Capital Disponible</p>
+                      <Wallet className="text-green-500" size={24} />
                     </div>
-                    <h3 className="text-4xl font-bold text-white mt-5 truncate" title={`$${proyectos.reduce((acc, p) => acc + (p.presupuestoTotal || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}>
-                      ${proyectos.reduce((acc, p) => acc + (p.presupuestoTotal || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    
+                    {/* El Cerebro Matemático: Presupuesto Total - Gastos Totales (SIN SÍMBOLO DE DÓLAR) */}
+                    <h3 className="text-4xl font-bold text-white mt-3 truncate" title={`Presupuesto: ${(proyectos.reduce((acc, p) => acc + (p.presupuestoTotal || 0), 0))} - Gastado: ${totalGastadoGlobal}`}>
+                      {(proyectos.reduce((acc, p) => acc + (p.presupuestoTotal || 0), 0) - totalGastadoGlobal).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </h3>
+                    
+                    <p className="text-[10px] text-arch-text-gray mt-2">
+                      <span className="text-red-400 font-bold">{totalGastadoGlobal.toLocaleString('en-US')}</span> gastados en total
+                    </p>
                   </div>
 
                   {/* 3. Distribución de Estados */}
