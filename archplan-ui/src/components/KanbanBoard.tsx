@@ -1,6 +1,6 @@
 // src/components/KanbanBoard.tsx
 import { useState, useEffect, type ChangeEvent } from 'react';
-import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, Camera, Loader2, User, History } from 'lucide-react';
+import { X, Plus, GripVertical, Clock, AlertCircle, CheckCircle2, Camera, Loader2, User, History, ImageIcon } from 'lucide-react';
 interface KanbanBoardProps {
   proyectoId: number;
   proyectoNombre: string;
@@ -24,6 +24,7 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
   const [uploadingFotoId, setUploadingFotoId] = useState<number | null>(null);
   const [historialAbiertoId, setHistorialAbiertoId] = useState<number | null>(null);
   const [historialDatos, setHistorialDatos] = useState<any[]>([]);
+  const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   const [activeMobileTab, setActiveMobileTab] = useState('TODO');
 
   useEffect(() => {
@@ -178,15 +179,42 @@ export default function KanbanBoard({ proyectoId, proyectoNombre, isOpen, onClos
                   </div>
                 </div>
 
-                {tarea.fotoUrl && (
-                  <div className="w-14 h-14 rounded-md overflow-hidden border border-gray-700/50 shrink-0 relative group">
+               {tarea.fotoUrl && (
+                <div className="mt-2 flex justify-end">
+                  <button 
+                    onClick={() => setImagenAmpliada(`http://localhost:8080/api/uploads/${tarea.fotoUrl}`)}
+                    className="text-[10px] text-arch-blue hover:text-white hover:bg-arch-blue/20 transition-all font-bold px-2 py-1 rounded border border-arch-blue/30 flex items-center gap-1.5"
+                  >
+                    <ImageIcon size={12} /> 1 Evidencia subida
+                  </button>
+                </div>
+              )}
+
+              {/* --- MODAL VISUALIZADOR DE IMAGEN (LIGHTBOX) --- */}
+              {imagenAmpliada && (
+                <div 
+                  className="fixed inset-0 bg-black/95 z-[300] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in"
+                  onClick={() => setImagenAmpliada(null)}
+                >
+                  <button 
+                    className="absolute top-6 right-6 text-white hover:text-arch-blue transition-colors p-2 bg-gray-900/50 rounded-full"
+                    onClick={() => setImagenAmpliada(null)}
+                  >
+                    <X size={32} />
+                  </button>
+                  
+                  <div className="max-w-5xl max-h-[90vh] relative group" onClick={(e) => e.stopPropagation()}>
                     <img 
-                      src={`http://localhost:8080/api/uploads/${tarea.fotoUrl}`} 
-                      alt="Evidencia" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                      src={imagenAmpliada} 
+                      alt="Evidencia Ampliada" 
+                      className="max-w-full max-h-[85vh] rounded-xl shadow-2xl border border-gray-800 object-contain"
                     />
+                    <div className="absolute bottom-[-40px] left-0 right-0 text-center text-gray-400 text-sm font-medium">
+                      Evidencia de Obra - {proyectoNombre}
+                    </div>
                   </div>
-                )}
+                </div>
+              )}
               </div>
 
               {/* BARRA DE ACCIÓN INFERIOR */}
