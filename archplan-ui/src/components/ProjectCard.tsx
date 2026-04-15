@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Layers, Clock, FileText, X, ExternalLink, UploadCloud, Loader2, ChevronDown, Kanban, DollarSign } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
 import BudgetTracker from './BudgetTracker';
+import ReportGenerator from './ReportGenerator';
+
 
 
 interface ProjectCardProps {
@@ -179,6 +181,11 @@ export default function ProjectCard({ proyecto, onUpdate }: ProjectCardProps) {
 
         {/* SECCIÓN 3: Footer con Quick Actions */}
         <div className="flex items-center justify-between mt-2 pt-4 border-t border-gray-800/50">
+        <ReportGenerator
+          proyectoId={proyecto.id}
+          proyectoNombre={proyecto.nombre}
+          presupuestoTotal={proyecto.presupuestoTotal || 0}
+        />
           <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Tools</p>
           <div className="flex items-center gap-1">
             <button onClick={handleViewPlans} title="View Blueprints" className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/80 rounded-lg transition-all cursor-pointer">
