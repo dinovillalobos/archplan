@@ -13,3 +13,10 @@ El motor principal de ArchPlan. Una API RESTful robusta y segura construida con 
 1. Levanta la base de datos PostgreSQL utilizando Docker Compose (ubicado en la raíz del proyecto):
    ```bash
    docker-compose up -d postgres-db pgadmin
+2. Abre una terminal en esta carpeta (bimmanager).
+3. Ejecuta el servidor usando Maven Wrapper:
+    ```bash
+    # En Windows
+   .\mvnw spring-boot:run
+   
+
